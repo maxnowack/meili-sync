@@ -1,6 +1,6 @@
 {
   "name": "elastic-sync",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "",
   "main": "dist/index.js",
   "bin": {
@@ -12,11 +12,27 @@
   "scripts": {
     "prepare": "npm run build",
     "lint": "eslint --quiet --ext .ts --ext .tsx .",
+    "preversion": "docker -v && git push && npm install",
+    "postversion": "git push && git push --tags && docker build -t $npm_package_config_docker_ns/$npm_package_name:latest . && docker-publish",
     "build": "rm -r ./dist; tsc"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "config": {
+    "docker": {
+      "ns": "maxnowack",
+      "name": "elastic-sync",
+      "skip": false,
+      "silence": false,
+      "strictSemver": false
+    }
+  },
+  "keywords": [
+    "mongodb",
+    "elasticsearch",
+    "sync",
+    "data"
+  ],
+  "author": "Max Nowack <max.nowack@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "@elastic/elasticsearch": "^7.7.1",
     "js-yaml": "^3.14.0",
@@ -26,6 +42,7 @@
     "@types/js-yaml": "^3.12.4",
     "@typescript-eslint/eslint-plugin": "^3.2.0",
     "@typescript-eslint/parser": "^3.2.0",
+    "@vanioinformatika/docker-publish": "^2.1.2",
     "eslint": "^7.2.0",
     "eslint-config-airbnb-base": "^14.1.0",
     "eslint-import-resolver-typescript": "^2.0.0",
