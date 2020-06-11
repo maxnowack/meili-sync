@@ -3,3 +3,5 @@ dist
 .circleci
 .env
 .git
+Dockerfile
+.dockerignore

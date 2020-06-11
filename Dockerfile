@@ -16,4 +16,5 @@ RUN npm install --production --no-audit
 COPY --from=build /app/dist /app/dist
 RUN npm link
 
-ENTRYPOINT [ "elastic-sync", "/config.yaml" ]
+ENV CONFIG_FILE /config.yaml
+ENTRYPOINT [ "sh", "-c", "elastic-sync $CONFIG_FILE" ]
