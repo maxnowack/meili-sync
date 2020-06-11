@@ -35,8 +35,10 @@
   "license": "MIT",
   "dependencies": {
     "@elastic/elasticsearch": "^7.7.1",
+    "@types/lodash.get": "^4.4.6",
     "fs-extra": "^9.0.1",
     "js-yaml": "^3.14.0",
+    "lodash.get": "^4.4.2",
     "mongodb": "^3.5.8",
     "p-map": "^4.0.0"
   },

@@ -1,5 +1,6 @@
 import { Client as ESClient } from '@elastic/elasticsearch'
 import { MongoClient, Db, Timestamp } from 'mongodb'
+import get from 'lodash.get'
 import pMap from 'p-map'
 import { DbConfig, SyncData } from './interfaces'
 
@@ -65,7 +66,7 @@ export default class Sync {
     return Object.keys(fields).reduce<{ [key: string]: any }>((memo, esField) => {
       const field = fields[esField]
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      return { ...memo, [esField]: doc[field.mongoField] }
+      return { ...memo, [esField]: get(doc, field.mongoField) }
     }, {})
   }
 
