@@ -32,6 +32,7 @@ module.exports = {
     /*
      * Typescript
      */
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
     'import/extensions': 'off',
     '@typescript-eslint/unbound-method': 'off',
     '@typescript-eslint/member-delimiter-style': ['error', {
