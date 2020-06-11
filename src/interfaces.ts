@@ -10,8 +10,13 @@ export interface DbConfig {
 }
 
 type esDataType = 'text'
-  | 'keyword' | 'date' | 'long' | 'double' | 'boolean' | 'ip'
-  | 'geo_point' | 'geo_shape' | 'completion' | 'object' | 'nested'
+  | 'keyword' | 'date' | 'date_nanos' | 'long' | 'integer' | 'short' | 'byte'
+  | 'double' | 'float' | 'half_float' | 'scaled_float' | 'boolean' | 'binary'
+  | 'integer_range' | 'float_range' | 'long_range' | 'double_range' | 'date_range'
+  | 'ip_range' | 'object' | 'nested' | 'geo_point' | 'geo_shape' | 'ip' | 'completion'
+  | 'token_count' | 'murmur3' | 'annotated-text' | 'percolator' | 'join' | 'rank_feature'
+  | 'dense_vector' | 'sparse_vector' | 'search_as_you_type' | 'alias' | 'flattened'
+  | 'shape' | 'histogram' | 'constant_keyword'
 
 export interface IndexFields {
   [key: string]: {
