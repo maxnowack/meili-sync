@@ -1,6 +1,7 @@
 import { Client as ESClient } from '@elastic/elasticsearch'
 import { MongoClient, Db, Timestamp } from 'mongodb'
 import pMap from 'p-map'
+import pRetry from 'p-retry'
 import { DbConfig, SyncData } from './interfaces'
 import getAtPath from './utils/getAtPath'
 
@@ -109,7 +110,7 @@ export default class Sync {
     const esDoc = this.transformDocument(doc)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const id = doc._id as string
-    await this.addToIndex(id, esDoc)
+    await pRetry(() => this.addToIndex(id, esDoc), { retries: 10 })
     this.log(`added doc ${id}`)
   }
 
@@ -123,8 +124,9 @@ export default class Sync {
     const pageCount = Math.ceil(docCount / pageSize)
     this.log(`got ${docCount} documents total`)
     await pMap([...Array(pageCount).keys()], async (page) => {
-      const cur = (await this.getCursor()).limit(pageSize).skip(page * pageSize)
-      const docs = await cur.toArray()
+      const cur = await pRetry(async () =>
+        (await this.getCursor()).limit(pageSize).skip(page * pageSize), { retries: 10 })
+      const docs = await pRetry(() => cur.toArray(), { retries: 10 })
       await pMap(docs, i => this.addDoc(i), { concurrency: sync.initialSync?.concurrency || 25 })
       this.log(`finished ${page} page`)
     }, { concurrency: sync.initialSync?.batchConcurrency || 1 })
