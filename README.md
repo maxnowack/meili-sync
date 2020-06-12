@@ -38,7 +38,7 @@ sync:
       mongoField: title # path to the value of the field in the mongodb document (uses lodash.get; see https://lodash.com/docs/4.17.15#get)
     categories:
       type: 'keyword'
-      mongoField: categories
+      mongoField: categories._id # array fields are resolved to all values automatically
     duration:
       type: 'double'
       mongoField: duration

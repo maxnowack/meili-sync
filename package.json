@@ -11,10 +11,23 @@
   ],
   "scripts": {
     "prepare": "npm run build",
+    "pretest": "npm run lint && npm run typecheck",
+    "typecheck": "tsc",
+    "test": "npm run ava",
+    "ava": "ava",
+    "watch:test": "ava --watch",
     "lint": "eslint --quiet --ext .ts --ext .tsx .",
-    "preversion": "docker -v && git push && npm install",
+    "preversion": "docker -v && npm test && git push && npm install",
     "postversion": "git push && git push --tags && docker build -t $npm_package_config_docker_ns/$npm_package_name:latest . && docker-publish",
     "build": "rm -r ./dist; tsc && chmod +x dist/cli.js"
+  },
+  "ava": {
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
   },
   "config": {
     "docker": {
@@ -40,16 +53,19 @@
     "js-yaml": "^3.14.0",
     "lodash.get": "^4.4.2",
     "mongodb": "^3.5.8",
-    "p-map": "^4.0.0"
+    "p-map": "^4.0.0",
+    "p-retry": "^4.2.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.1",
     "@types/js-yaml": "^3.12.4",
     "@types/mongodb": "^3.5.20",
     "@types/p-map": "^2.0.0",
+    "@types/p-retry": "^3.0.1",
     "@typescript-eslint/eslint-plugin": "^3.2.0",
     "@typescript-eslint/parser": "^3.2.0",
     "@vanioinformatika/docker-publish": "^2.1.2",
+    "ava": "^3.8.2",
     "eslint": "^7.2.0",
     "eslint-config-airbnb-base": "^14.1.0",
     "eslint-import-resolver-typescript": "^2.0.0",

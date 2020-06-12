@@ -1,8 +1,8 @@
 import { Client as ESClient } from '@elastic/elasticsearch'
 import { MongoClient, Db, Timestamp } from 'mongodb'
-import get from 'lodash.get'
 import pMap from 'p-map'
 import { DbConfig, SyncData } from './interfaces'
+import getAtPath from './utils/getAtPath'
 
 export default class Sync {
   private config: DbConfig
@@ -27,10 +27,13 @@ export default class Sync {
     if (sync.fields) {
       const fields = Object.values(sync.fields).reduce<{
         [key: string]: number,
-      }>((memo, field) => ({
-        ...memo,
-        [field.mongoField]: 1,
-      }), {})
+      }>((memo, field) => {
+        if (!field.mongoField) return memo
+        return {
+          ...memo,
+          [field.mongoField]: 1,
+        }
+      }, {})
       cursor = cursor.project(fields)
     }
     return cursor
@@ -65,8 +68,8 @@ export default class Sync {
 
     return Object.keys(fields).reduce<{ [key: string]: any }>((memo, esField) => {
       const field = fields[esField]
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      return { ...memo, [esField]: get(doc, field.mongoField) }
+      if (!field.mongoField) return memo
+      return { ...memo, [esField]: getAtPath(doc, field.mongoField) as unknown }
     }, {})
   }
 
@@ -139,7 +142,7 @@ export default class Sync {
     if (!indexExists && sync.fields) {
       await this.createIndex()
     }
-    if (!indexExists || !(await this.indexHasDocs())) {
+    if (process.env.INITIAL_SYNC || (!indexExists || !(await this.indexHasDocs()))) {
       await this.initialSync()
     }
 

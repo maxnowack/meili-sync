@@ -21,7 +21,7 @@ type esDataType = 'text'
 export interface IndexFields {
   [key: string]: {
     type: esDataType,
-    mongoField: string,
+    mongoField?: string,
   },
 }
 
