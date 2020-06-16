@@ -144,7 +144,10 @@ export default class Sync {
     if (!indexExists && sync.fields) {
       await this.createIndex()
     }
-    if (process.env.INITIAL_SYNC || (!indexExists || !(await this.indexHasDocs()))) {
+    const doInitialSync = process.env.INITIAL_SYNC
+      || parseInt(process.env.INITIAL_SYNC_BEFORE || '0', 10) >= Date.now()
+      || (!indexExists || !(await this.indexHasDocs()))
+    if (doInitialSync) {
       await this.initialSync()
     }
 
