@@ -29,10 +29,11 @@ export default class Sync {
       const fields = Object.values(sync.fields).reduce<{
         [key: string]: number,
       }>((memo, field) => {
-        if (!field.mongoField) return memo
+        const mongoField = typeof field === 'string' ? field : field.mongoField
+        if (!mongoField) return memo
         return {
           ...memo,
-          [field.mongoField]: 1,
+          [mongoField]: 1,
         }
       }, {})
       cursor = cursor.project(fields)
@@ -76,9 +77,10 @@ export default class Sync {
       id: doc._id,
       ...Object.keys(fields).reduce<{ [key: string]: any }>((memo, esField) => {
         const field = fields[esField]
-        if (!field.mongoField) return memo
+        const mongoField = typeof field === 'string' ? field : field.mongoField
+        if (!mongoField) return memo
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        return { ...memo, [esField]: getAtPath(doc, field.mongoField) || null }
+        return { ...memo, [esField]: getAtPath(doc, mongoField) || null }
       }, {}),
     }
   }
@@ -105,7 +107,7 @@ export default class Sync {
     const cursor = await this.getCursor()
     this.log('calculating intitial data set size …')
     const docCount = await cursor.count()
-    const pageSize = sync.initialSync?.batchSize || 10000
+    const pageSize = sync.initialSync?.batchSize || 100
     const pageCount = Math.ceil(docCount / pageSize)
     this.log(`got ${docCount} documents total`)
     await pMap([...Array(pageCount).keys()], async (page) => {

@@ -13,7 +13,7 @@ export interface IndexFields {
   [key: string]: {
     primaryKey?: boolean,
     mongoField?: string,
-  },
+  } | string,
 }
 
 export interface SyncData {
