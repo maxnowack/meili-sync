@@ -1,4 +1,4 @@
-import { Client as ESClient } from '@elastic/elasticsearch'
+import MeiliSearch from 'meilisearch'
 import { MongoClient, Db, Timestamp } from 'mongodb'
 import pMap from 'p-map'
 import pRetry from 'p-retry'
@@ -10,14 +10,14 @@ export default class Sync {
 
   private syncData: SyncData
 
-  private elastic: ESClient
+  private meili: MeiliSearch
 
   private mongoPromise?: Promise<Db>
 
   constructor(config: DbConfig, sync: SyncData) {
     this.config = config
     this.syncData = sync
-    this.elastic = new ESClient(this.config.elastic)
+    this.meili = new MeiliSearch(this.config.meili)
   }
 
   public async getCursor() {
@@ -58,60 +58,45 @@ export default class Sync {
   }
 
   public async indexHasDocs() {
-    const count = await this.elastic.count({ index: this.syncData.indexName })
-    return count.body.count > 0
+    const index = this.meili.getIndex(this.syncData.indexName)
+    const stats = await index.getStats()
+    return stats.numberOfDocuments > 0
   }
 
   // eslint-disable-next-line class-methods-use-this
-  public transformDocument(doc: { [key: string]: any }) {
+  public transformDocument(doc: { [key: string]: any }): { [key: string]: any, id: string } {
     const { fields } = this.syncData
-    if (!fields) return doc
+    if (!fields) {
+      const { _id: id, ...params } = doc
+      return { id: id as string, ...params }
+    }
 
-    return Object.keys(fields).reduce<{ [key: string]: any }>((memo, esField) => {
-      const field = fields[esField]
-      if (!field.mongoField) return memo
-      return { ...memo, [esField]: getAtPath(doc, field.mongoField) as unknown }
-    }, {})
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      id: doc._id,
+      ...Object.keys(fields).reduce<{ [key: string]: any }>((memo, esField) => {
+        const field = fields[esField]
+        if (!field.mongoField) return memo
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        return { ...memo, [esField]: getAtPath(doc, field.mongoField) || null }
+      }, {}),
+    }
   }
 
-  public async addToIndex(id: string, body: { [key: string]: any }) {
-    return this.elastic.index({
-      index: this.syncData.indexName,
-      id,
-      body,
-    }).catch((err) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      throw err.meta.body.error
-    })
+  public async addToIndex(docs: { [key: string]: any, id: string }[]) {
+    return this.meili.getIndex(this.syncData.indexName).addDocuments(docs)
   }
 
   public async indexExists() {
-    const resp = await this.elastic.indices.exists({ index: this.syncData.indexName })
-    return resp.body as unknown as boolean
+    return this.meili.getIndex(this.syncData.indexName).show()
+      .then(() => true)
+      .catch(() => false)
   }
 
   public async createIndex() {
     const { fields } = this.syncData
     if (!fields) throw new Error('Cannot create index from empty fields')
-    return this.elastic.indices.create({
-      index: this.syncData.indexName,
-      body: {
-        mappings: {
-          properties: Object.keys(fields).reduce((memo, field) => ({
-            ...memo,
-            [field]: { type: fields[field].type },
-          }), {}),
-        },
-      },
-    })
-  }
-
-  public async addDoc(doc) {
-    const esDoc = this.transformDocument(doc)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const id = doc._id as string
-    await pRetry(() => this.addToIndex(id, esDoc), { retries: 10 })
-    this.log(`added doc ${id}`)
+    return this.meili.createIndex(this.syncData.indexName, { primaryKey: 'id' })
   }
 
   public async initialSync() {
@@ -127,7 +112,8 @@ export default class Sync {
       const cur = await pRetry(async () =>
         (await this.getCursor()).limit(pageSize).skip(page * pageSize), { retries: 10 })
       const docs = await pRetry(() => cur.toArray(), { retries: 10 })
-      await pMap(docs, i => this.addDoc(i), { concurrency: sync.initialSync?.concurrency || 25 })
+        .then(raw => raw.map(i => this.transformDocument(i)))
+      await pRetry(() => this.addToIndex(docs), { retries: 10 })
       this.log(`finished ${page} page`)
     }, { concurrency: sync.initialSync?.batchConcurrency || 1 })
     this.log('finished intitial full sync')
@@ -165,7 +151,7 @@ export default class Sync {
     watchCursor.on('change', (next) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const doc = (next as any).fullDocument as { [key: string]: any }
-      this.addDoc(doc).catch((err) => {
+      this.addToIndex([this.transformDocument(doc)]).catch((err) => {
         console.error(err)
         process.exit(1)
       })

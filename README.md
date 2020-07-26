@@ -1,20 +1,20 @@
-# elastic-sync
-Connector to sync mongodb documents into a elasticsearch index
+# meili-sync
+Connector to sync mongodb documents into meilisearch
 
 ## installation
 ````bash
-  $ npm install -g elastic-sync
+  $ npm install -g meili-sync
 ````
 
 ## usage
 ````bash
-  elastic-sync <configFile>
+  meili-sync <configFile>
 ````
 
 ### docker
 ````bash
-  docker pull maxnowack/elastic-sync
-  docker run -v /path/to/config.yaml:/config.yaml maxnowack/elastic-sync
+  docker pull maxnowack/meili-sync
+  docker run -v /path/to/config.yaml:/config.yaml maxnowack/meili-sync
 ````
 
 ## configuration
@@ -24,41 +24,33 @@ mongo:
   options: # connection options (see https://mongodb.github.io/node-mongodb-native/3.6/reference/connecting/connection-settings/)
     useNewUrlParser: true
     useUnifiedTopology: true
-elastic: # these options are directly passed through to the elastic search client (see https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/client-configuration.html)
-  node: http://localhost:9200
+meili: # these options are directly passed through to the meilisearch client
+  host: http://localhost:7700
+  apiKey: 'abc123'
 sync:
-- indexName: videos # name of the elastic search index. the index will be created automatically with the fields below if it doesn't exist
+- indexName: videos # name of the meilisearch index. the index will be created automatically if it doesn't exist
   collectionName: videos # name of the mongodb collection
   selector: # mongodb query for selecting the documents for syncing
     deleted: false
     disabled: false
-  fields: # field mapping and elasticsearch data types
-    title: # name of the field in the elasticsearch index
-      type: 'text' # type of the field (see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html)
+  fields: # field mapping
+    title: # name of the field in the meilisearch index
       mongoField: title # path to the value of the field in the mongodb document (uses lodash.get; see https://lodash.com/docs/4.17.15#get)
     categories:
-      type: 'keyword'
       mongoField: categories._id # array fields are resolved to all values automatically
     duration:
-      type: 'double'
       mongoField: duration
     publishDate:
-      type: 'date'
       mongoField: publishDate
     rating:
-      type: 'double'
       mongoField: rating
     ratings:
-      type: 'double'
       mongoField: ratings
     slug:
-      type: 'keyword'
       mongoField: slug
     tags:
-      type: 'text'
       mongoField: tags
     views:
-      type: 'double'
       mongoField: views
 ````
 

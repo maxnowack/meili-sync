@@ -17,4 +17,4 @@ COPY --from=build /app/dist /app/dist
 RUN npm link
 
 ENV CONFIG_FILE /config.yaml
-ENTRYPOINT [ "sh", "-c", "elastic-sync $CONFIG_FILE" ]
+ENTRYPOINT [ "sh", "-c", "meili-sync $CONFIG_FILE" ]
